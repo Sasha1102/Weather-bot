@@ -20,7 +20,10 @@ def get_user(id):
 
 def create_user(id, first_name, last_name=None, username=None, **params):
     User.create(identifier=id, first_name=first_name, last_name=last_name, username=username)
-    print("1489")
+
+
+def update_user(**params):
+    User.update(**params).where(User.identifier == params['identifier']).execute()
 
 
 db.connect()
