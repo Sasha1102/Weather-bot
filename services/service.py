@@ -16,3 +16,7 @@ def get_city(user_id):
     user = get_user(user_id)
     return user.city
 
+
+def main_menu():
+    pass
+

@@ -26,5 +26,15 @@ def update_user(**params):
     User.update(**params).where(User.identifier == params['identifier']).execute()
 
 
+class Location(Model):
+    latitude = FloatField()
+    longitude = FloatField()
+    display_name = CharField()
+    user = ForeignKeyField(User, backref='locations')
+
+    class Meta:
+        database = db
+
+
 db.connect()
 db.create_tables([User], safe=True)

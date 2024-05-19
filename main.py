@@ -1,8 +1,7 @@
 import telebot
-from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton, KeyboardButton, ReplyKeyboardMarkup
+from telebot.types import KeyboardButton, ReplyKeyboardMarkup
 from config import TOKEN
-from service import *
-import random
+from services.service import *
 
 bot = telebot.TeleBot(TOKEN)
 
@@ -28,7 +27,7 @@ def start_message(m):
     bot.send_message(m.chat.id, "йцукен2", reply_markup=keyboard)
 
 
-@bot.callback_query_handler(func=lambda call:True)
+@bot.callback_query_handler(func=lambda call: call.data == '')
 def callback_inline(call):
     if call.data == "SS":
         pass
