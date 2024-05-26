@@ -1,4 +1,7 @@
 from db import *
+from geopy.geocoders import Nominatim
+
+geolocator = Nominatim(user_agent='geoapiExercises')
 
 
 def create_user_if_not_exist(user):
@@ -8,8 +11,10 @@ def create_user_if_not_exist(user):
     return False
 
 
-def change_city(m):
-    update_user(identifier=m.from_user.id, city=m.text)
+def add_location(identifier, latitude, longitude):
+    location = geolocator.reverse((latitude, longitude), language='en')
+    user = get_user(identifier)
+    create_location(latitude, longitude, location.adress, user)
 
 
 def get_city(user_id):
@@ -19,4 +24,3 @@ def get_city(user_id):
 
 def main_menu():
     pass
-

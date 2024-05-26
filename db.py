@@ -8,7 +8,6 @@ class User(Model):
     first_name = CharField()
     last_name = CharField(null=True)
     username = CharField(null=True)
-    city = CharField(null=True)
 
     class Meta:
         database = db
@@ -34,6 +33,13 @@ class Location(Model):
 
     class Meta:
         database = db
+
+def get_location(id):
+    return Location.get_or_none(Location.id == id)
+
+
+def create_location(latitude, longitude, display_name, user):
+    Location.create(latitude=latitude, longitude=longitude, display_name=display_name, user=user)
 
 
 db.connect()
