@@ -1,22 +1,20 @@
-from telebot.types import InlineKeyboardButton, InlineKeyboardMarkup
+from telebot import TeleBot
+from telebot.types import InlineKeyboardButton, InlineKeyboardMarkup, Message
+import services.location_service as ls
+import services.user_service as us
 
-from services.service import *
 
-
-def register(bot):
-    def handle_location(m):
-        if m.content_type == 'location':
-            add_location(m.from_user.id, m.location.latitude, m.location.longitude)
-        else:
-            m = "Ви надіслали не локацію"
-            bot.register_next_step_handler(m, handle_location)
+def register(bot: TeleBot):
 
     @bot.message_handler(commands=['start'])
     def start_message(m):
-        create_user_if_not_exist(m.from_user)
+        us.create_user_if_not_exist(m.from_user)
         text = "Вітаємо! Оберіть потрібну вам опцію:"
-        button_profile = InlineKeyboardButton(text='Профіль', callback_data='profile')
-        button_weather_by_coordinates = InlineKeyboardButton(text='Погода за координатами', callback_data='weather_by_coordinates')
+        button_profile = InlineKeyboardButton(text='Список локацій', callback_data='locations_list')
+        button_weather_by_coordinates = InlineKeyboardButton(
+            text='Погода за координатами',
+            callback_data='weather_by_coordinates'
+        )
         button_distribution = InlineKeyboardButton(text='Розсилка', callback_data='distribution')
         keyboard = InlineKeyboardMarkup()
         keyboard.keyboard = [[button_profile, button_weather_by_coordinates], [button_distribution]]
