@@ -22,3 +22,7 @@ def add_location(latitude, longitude, user):
 
 def get_all_locations_by_user(user):
     return li.get_all_locations_by_user(user)
+
+
+def get_location(id):
+    return li.get_location(id)
