@@ -5,45 +5,30 @@ from telebot.types import InlineKeyboardButton, InlineKeyboardMarkup, Message
 import services.location_service as ls
 import services.user_service as us
 import services.weather_service as ws
+import services.ui_service as uis
 
 
 def register(bot: TeleBot):
-    def main_menu(m):
-        text = "Вітаємо! Оберіть потрібну вам опцію:"
-        button_profile = InlineKeyboardButton(text='Список локацій', callback_data='locations_list')
-        button_weather_by_coordinates = InlineKeyboardButton(
-            text='Погода за координатами',
-            callback_data='weather_by_coordinates'
-        )
-        button_distribution = InlineKeyboardButton(text='Розсилка', callback_data='distribution')
-        keyboard = InlineKeyboardMarkup()
-        keyboard.keyboard = [[button_profile, button_weather_by_coordinates], [button_distribution]]
-        bot.send_message(chat_id=m.chat.id, text=text, reply_markup=keyboard)
-
     def handle_location(m: Message):
         if m.content_type == 'location':
             user = us.get_user(m.from_user.id)
             ls.add_location(m.location.latitude, m.location.longitude, user)
             bot.send_message(m.chat.id, 'Ви додали локацію!')
-            main_menu(m)
+            menu_text = uis.main_menu(m.from_user.id)
+            bot.send_message(chat_id=m.chat.id, **menu_text)
         else:
             if m.text == 'stop':
                 bot.send_message(m.chat.id, "Ви скасували надсилання")
-                main_menu(m)
+                menu_text = uis.main_menu(m.from_user.id)
+                bot.send_message(chat_id=m.chat.id, **menu_text)
                 return
             message = bot.send_message(m.chat.id, "Ви надіслали не локацію")
             bot.register_next_step_handler(message, handle_location)
 
     @bot.callback_query_handler(func=lambda call: call.data == 'menu')
     def menu(call):
-        text = "Вітаємо! Оберіть потрібну вам опцію:"
-        button_profile = InlineKeyboardButton(text='Список локацій', callback_data='locations_list')
-        button_weather_by_coordinates = InlineKeyboardButton(text='Погода за координатами',
-                                                             callback_data='weather_by_coordinates')
-        button_distribution = InlineKeyboardButton(text='Розсилка', callback_data='distribution')
-        keyboard = InlineKeyboardMarkup()
-        keyboard.keyboard = [[button_profile, button_weather_by_coordinates], [button_distribution]]
-        bot.edit_message_text(text, chat_id=call.message.chat.id, message_id=call.message.id, reply_markup=keyboard)
+        menu_text = uis.main_menu(call.from_user.id)
+        bot.edit_message_text(chat_id=call.message.chat.id, message_id=call.message.id, **menu_text)
 
     @bot.callback_query_handler(func=lambda call: call.data == 'weather_by_coordinates')
     def weather_by_coordinates(call):
@@ -78,17 +63,19 @@ def register(bot: TeleBot):
     def location(call):
         location_id = int(call.data.split('-')[1])
         location_instance = ls.get_location(location_id)
+        user = us.get_user(call.from_user.id)
         weather = ws.get_weather(location_instance)
-        text = (f"Поточна погода у {location_instance.display_name}:\n"
-                f"Температура: {weather['temperature']}\n"
-                f"Відносна вологість: {weather['humidity']}\n"
-                f"Дощ: {weather['rain']}\n"
-                f"Злива: {weather['showers']}\n"
-                f"Снігопад: {weather['snowfall']}\n"
-                f"Швидкість вітру: {weather['wind_speed']}\n"
-                f"Пориви вітру: {weather['wind_gusts']}")
-        bot.send_message(call.message.chat.id, text)
-
+        text = uis.create_weather_text(weather, location_instance)
+        keyboard = InlineKeyboardMarkup()
+        if user.favourite_location == location_id:
+            keyboard.add(InlineKeyboardButton(text='Прибрати локацію з улюбленої',
+                                              callback_data=f'rm_from_fav-{location_id}'))
+        else:
+            keyboard.add(InlineKeyboardButton(text='Зробити локацію улюбленою',
+                                              callback_data=f'set_fav-{location_id}'))
+        keyboard.add(InlineKeyboardButton(text='Видалити локацію', callback_data=f'remove_location-{location_id}'))
+        keyboard.add(InlineKeyboardButton(text='Список локацій', callback_data='locations_list'))
+        bot.edit_message_text(text, call.message.chat.id, call.message.id, reply_markup=keyboard)
 
     @bot.callback_query_handler(func=lambda call: call.data == 'add_location')
     def add_location(call):
@@ -97,4 +84,24 @@ def register(bot: TeleBot):
 
     @bot.callback_query_handler(func=lambda call: call.data.split('-')[0] == 'remove_location')
     def remove_location(call):
-        pass
+        location_id = int(call.data.split('-')[1])
+        ls.delete_location(location_id)
+        bot.answer_callback_query(call.id, text='Ви видалили локацію')
+        locations(call)
+
+    @bot.callback_query_handler(func=lambda call: call.data.split('-')[0] == 'rm_from_fav')
+    def rm_from_fav(call):
+        user = us.get_user(call.from_user.id)
+        user.favourite_location = None
+        user.save()
+        bot.answer_callback_query(call.id, text='Ви вилучили цю локацію із улюблених')
+        location(call)
+
+    @bot.callback_query_handler(func=lambda call: call.data.split('-')[0] == 'set_fav')
+    def set_fav(call):
+        location_id = int(call.data.split('-')[1])
+        user = us.get_user(call.from_user.id)
+        user.favourite_location = location_id
+        user.save()
+        bot.answer_callback_query(call.id, text='Ви зробили цю локацію улюбленою')
+        location(call)

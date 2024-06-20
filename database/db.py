@@ -8,6 +8,7 @@ class User(Model):
     first_name = CharField()
     last_name = CharField(null=True)
     username = CharField(null=True)
+    favourite_location = IntegerField(null=True)
 
     class Meta:
         database = db

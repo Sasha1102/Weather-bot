@@ -11,3 +11,9 @@ def create_location(latitude, longitude, display_name, user):
 
 def get_all_locations_by_user(user):
     return Location.select().where(Location.user == user)
+
+
+def delete_location(id):
+    location = Location.get_or_none(id)
+    if location:
+        location.delete_instance()
