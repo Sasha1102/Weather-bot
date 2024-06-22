@@ -9,4 +9,8 @@ message_register(bot)
 callback_register(bot)
 
 if __name__ == '__main__':
-    bot.polling()
+    while True:
+        try:
+            bot.polling()
+        except Exception as e:
+            print(e)

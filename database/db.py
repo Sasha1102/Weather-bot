@@ -18,10 +18,18 @@ class Location(Model):
     latitude = FloatField()
     longitude = FloatField()
     display_name = CharField()
+    timezone = CharField()
     user = ForeignKeyField(User, backref='locations')
 
     class Meta:
         database = db
+
+
+class Schedule(Model):
+    user = ForeignKeyField(User, backref='schedules')
+    location = ForeignKeyField(Location, backref='schedules')
+    hours = IntegerField()
+    minutes = IntegerField()
 
 
 db.connect()

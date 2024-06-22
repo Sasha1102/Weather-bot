@@ -1,5 +1,3 @@
-from pprint import pprint
-
 from telebot import TeleBot
 from telebot.types import InlineKeyboardButton, InlineKeyboardMarkup, Message
 import services.location_service as ls
@@ -36,7 +34,10 @@ def register(bot: TeleBot):
 
     @bot.callback_query_handler(func=lambda call: call.data == 'distribution')
     def distribution(call):
-        pass
+        keyboard = InlineKeyboardMarkup()
+        user = us.get_user(call.from_user.id)
+        all_locations = ls.get_all_locations_by_user(user)
+        text = 'Виберіть локацію для розсилки:' if
 
     @bot.callback_query_handler(func=lambda call: call.data.split('-')[0] == 'time')
     def choose_time(call):
@@ -86,6 +87,9 @@ def register(bot: TeleBot):
     def remove_location(call):
         location_id = int(call.data.split('-')[1])
         ls.delete_location(location_id)
+        user = us.get_user(call.from_user.id)
+        user.favourite_location = None
+        user.save()
         bot.answer_callback_query(call.id, text='Ви видалили локацію')
         locations(call)
 

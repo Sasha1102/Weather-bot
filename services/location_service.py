@@ -1,12 +1,14 @@
 from geopy.geocoders import Photon
 import infrastructure.location_infrastructure as li
+from timezonefinder import TimezoneFinder
 
-
+tf = TimezoneFinder()
 geolocator = Photon(user_agent='geoapiExercises')
 
 
 def add_location(latitude, longitude, user):
     location = geolocator.reverse((latitude, longitude), language='en')
+    timezone_str = tf.timezone_at(lng=longitude, lat=latitude)
     address = []
     if not location:
         address = f'{latitude}, {longitude}'
@@ -17,7 +19,7 @@ def add_location(latitude, longitude, user):
         address = ', '.join(address)
     else:
         address = ', '.join(location.address.split(', ')[::-1])
-    li.create_location(latitude, longitude, address, user)
+    li.create_location(latitude, longitude, address, user, timezone_str)
 
 
 def get_all_locations_by_user(user):
