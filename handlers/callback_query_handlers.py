@@ -4,6 +4,10 @@ import services.location_service as ls
 import services.user_service as us
 import services.weather_service as ws
 import services.ui_service as uis
+import services.schedule_service as ss
+import re
+from datetime import datetime
+import infrastructure.schedule_infrastructure as si
 
 
 def register(bot: TeleBot):
@@ -23,6 +27,29 @@ def register(bot: TeleBot):
             message = bot.send_message(m.chat.id, "Ви надіслали не локацію")
             bot.register_next_step_handler(message, handle_location)
 
+    def handle_schedule_time(m):
+        if m.text == 'stop':
+            bot.send_message(m.chat.id, "Ви скасували надсилання")
+            menu_text = uis.main_menu(m.from_user.id)
+            bot.send_message(chat_id=m.chat.id, **menu_text)
+            return
+        time_str = m.text
+        pattern = re.compile(r'^(?:[01]\d|2[0-3]):[0-5]\d$')
+        if not pattern.match(time_str):
+            bot.send_message(m.chat.id, text='Ви написали час в неправильному форматі')
+            bot.register_next_step_handler(m, handle_schedule_time)
+            return
+        time_obj = datetime.strptime(time_str, "%H:%M")
+
+        hour = time_obj.hour
+        minute = time_obj.minute
+        user = us.get_user(m.from_user.id)
+        schedule = si.create_schedule(user, user.favourite_location, hour, minute)
+        ss.start_single_schedule(bot, schedule, user)
+        bot.send_message(m.chat.id, 'Ви додали розсилку!')
+        menu_text = uis.main_menu(m.from_user.id)
+        bot.send_message(chat_id=m.chat.id, **menu_text)
+
     @bot.callback_query_handler(func=lambda call: call.data == 'menu')
     def menu(call):
         menu_text = uis.main_menu(call.from_user.id)
@@ -36,8 +63,11 @@ def register(bot: TeleBot):
     def distribution(call):
         keyboard = InlineKeyboardMarkup()
         user = us.get_user(call.from_user.id)
-        all_locations = ls.get_all_locations_by_user(user)
-        text = 'Виберіть локацію для розсилки:' if
+        if not user.favourite_location:
+            bot.answer_callback_query(call.id, text='У вас немає улюбленої локації, додайте її', show_alert=True)
+            return
+        bot.edit_message_text(text='Впишіть час для розсилки', chat_id=call.message.chat.id, message_id=call.message.id, reply_markup=keyboard)
+        bot.register_next_step_handler(call.message, handle_schedule_time)
 
     @bot.callback_query_handler(func=lambda call: call.data.split('-')[0] == 'time')
     def choose_time(call):

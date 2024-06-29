@@ -11,3 +11,7 @@ def create_user(id, first_name, last_name=None, username=None, **params):
 
 def update_user(**params):
     User.update(**params).where(User.identifier == params['identifier']).execute()
+
+
+def get_all_users():
+    return User.select()

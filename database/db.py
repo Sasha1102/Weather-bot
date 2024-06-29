@@ -31,6 +31,9 @@ class Schedule(Model):
     hours = IntegerField()
     minutes = IntegerField()
 
+    class Meta:
+        database = db
+
 
 db.connect()
-db.create_tables([User, Location], safe=True)
+db.create_tables([User, Location, Schedule], safe=True)
